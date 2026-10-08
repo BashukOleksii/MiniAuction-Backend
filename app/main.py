@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import auctions, auth, health, users
+from app.api.routes import auction_images, auctions, auth, health, users
 from app.core.cloudinary import configure_cloudinary
 from app.core.config import settings
 from app.db.mongodb import initialize_mongodb
@@ -31,6 +31,11 @@ app.add_middleware(
 
 app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 app.include_router(auctions.router, prefix="/api/v1/auctions", tags=["Auctions"])
+app.include_router(
+    auction_images.router,
+    prefix="/api/v1/auctions",
+    tags=["Auction Images"],
+)
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(
