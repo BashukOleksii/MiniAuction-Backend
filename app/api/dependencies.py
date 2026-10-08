@@ -43,3 +43,16 @@ async def get_current_user(
     if payload.get("ver", 0) != user.token_version:
         raise unauthorized
     return user
+
+
+async def get_optional_current_user(
+    repository: Annotated[UserRepository, Depends(get_user_repository)],
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None,
+        Depends(bearer_scheme),
+    ],
+) -> User | None:
+    """Public pages also show an owner's drafts after a valid Bearer login."""
+    if credentials is None:
+        return None
+    return await get_current_user(repository, credentials)
