@@ -1,3 +1,4 @@
+
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -6,6 +7,7 @@ from jwt import InvalidTokenError
 from pwdlib import PasswordHash
 
 from app.core.config import settings
+
 
 password_hasher = PasswordHash.recommended()
 
@@ -26,17 +28,21 @@ def verify_password(
 
 def create_access_token(
     user_id: str,
-    role: str
+    role: str,
+    token_version: int = 0
 ) -> str:
-
     if not user_id or role not in ("user", "admin"):
         raise ValueError("Invalid token subject or role")
+
+    if type(token_version) is not int or token_version < 0:
+        raise ValueError("Invalid token version")
 
     now = datetime.now(timezone.utc)
 
     payload = {
         "sub": user_id,
         "role": role,
+        "ver": token_version,
         "iat": now,
         "exp": now + timedelta(
             minutes=settings.jwt_access_token_expire_minutes
@@ -51,7 +57,6 @@ def create_access_token(
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
-
     payload = jwt.decode(
         token,
         settings.jwt_secret_key.get_secret_value(),
@@ -66,5 +71,10 @@ def decode_access_token(token: str) -> dict[str, Any]:
 
     if payload["role"] not in ("user", "admin"):
         raise InvalidTokenError("Invalid token role")
+
+    version = payload.get("ver", 0)
+
+    if type(version) is not int or version < 0:
+        raise InvalidTokenError("Invalid token version")
 
     return payload
