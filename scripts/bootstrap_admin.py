@@ -1,9 +1,3 @@
-"""One-time bootstrap of the first admin; execute in a trusted terminal only.
-
-Usage: python -m scripts.bootstrap_admin
-Does not add any HTTP endpoint or print the password.
-"""
-
 import asyncio
 import getpass
 
