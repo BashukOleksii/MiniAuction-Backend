@@ -31,6 +31,16 @@ async def create_indexes(db: AsyncDatabase) -> None:
         name="ix_bids_bidder_created",
     )
 
+    # New: pagination and action filtering for the administrator audit feed.
+    await db["admin_audit_logs"].create_index(
+        [("created_at", DESCENDING), ("_id", ASCENDING)],
+        name="ix_admin_audit_created",
+    )
+    await db["admin_audit_logs"].create_index(
+        [("action", ASCENDING), ("created_at", DESCENDING)],
+        name="ix_admin_audit_action_created",
+    )
+
 
 async def initialize_mongodb(app: FastAPI) -> AsyncMongoClient:
     client = AsyncMongoClient(
