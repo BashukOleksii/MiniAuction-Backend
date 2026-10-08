@@ -14,7 +14,6 @@ from pydantic import (
 
 from app.models.auction import AuctionImage
 
-
 AuctionViewStatus = Literal["draft", "scheduled", "active", "finished", "cancelled"]
 AuctionSortField = Literal["created_at", "current_price", "ends_at", "title"]
 PublicAuctionFilter = Literal["active", "scheduled", "finished"]

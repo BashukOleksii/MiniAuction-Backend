@@ -77,7 +77,7 @@ class FakeAuctionRepository:
             if "$and" in query:
                 import re
                 pattern = query["$and"][0]["$or"][0]["title"]["$regex"]
-                if not re.search(pattern, auction.title + " " + auction.description, re.I):
+                if not re.search(pattern, auction.title + " " + auction.description, re.IGNORECASE):
                     continue
             result.append(auction)
         return result
