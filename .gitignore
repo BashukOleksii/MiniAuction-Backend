@@ -16,7 +16,6 @@ venv/
 env/
 ENV/
 virtualenv/
-.python-version
 
 # ===========================
 # PyCharm / JetBrains
