@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 from pymongo import ASCENDING
@@ -7,14 +8,13 @@ from pymongo.asynchronous.database import AsyncDatabase
 from app.db.mongodb import get_database
 from app.models.auction import Auction, AuctionStatus
 
-
 router = APIRouter()
 
 
-@router.get("", response_model=list[Auction])
+@router.get("/")
 async def list_active_auctions(
+    db: Annotated[AsyncDatabase, Depends(get_database)],
     limit: int = Query(default=20, ge=1, le=100),
-    db: AsyncDatabase = Depends(get_database),
 ):
     now = datetime.now(timezone.utc)
     cursor = (
