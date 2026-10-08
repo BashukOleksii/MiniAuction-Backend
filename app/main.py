@@ -1,43 +1,40 @@
+from contextlib import asynccontextmanager
 
-from functools import lru_cache
-from typing import Literal
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from pydantic import Field, SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-    )
-
-    app_name: str = "Mini Auction API"
-    app_env: Literal["development", "test", "production"] = "development"
-
-    mongodb_uri: SecretStr
-    mongodb_db_name: str = "mini_auction"
-
-    cloudinary_cloud_name: str
-    cloudinary_api_key: str
-    cloudinary_api_secret: SecretStr
-
-    jwt_secret_key: SecretStr
-    jwt_algorithm: str = "HS256"
-    jwt_access_token_expire_minutes: int = Field(default=30, gt=0)
-
-    cors_origins: list[str] = Field(
-        default_factory=lambda: [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-        ]
-    )
+from app.api.routes import auctions, auth, health, users
+from app.core.cloudinary import configure_cloudinary
+from app.core.config import settings
+from app.db.mongodb import initialize_mongodb
 
 
-@lru_cache
-def get_settings() -> Settings:
-    return Settings()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    client = await initialize_mongodb(app)
+    try:
+        configure_cloudinary()
+        yield
+    finally:
+        await client.close()
 
 
-settings = get_settings()
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
+app.include_router(health.router, prefix="/api/v1", tags=["Health"])
+app.include_router(auctions.router, prefix="/api/v1/auctions", tags=["Auctions"])
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
+app.include_router(
+    auctions.my_router,
+    prefix="/api/v1/users/me",
+    tags=["Auctions"],
+)
