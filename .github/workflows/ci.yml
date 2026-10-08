@@ -1,0 +1,66 @@
+
+name: Backend CI
+
+# Коли запускати перевірки
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+# Мінімально необхідні права
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    # Тестові значення, не справжні секрети
+    env:
+      APP_ENV: test
+      MONGODB_URI: mongodb://127.0.0.1:27017
+      MONGODB_DB_NAME: mini_auction_test
+
+      CLOUDINARY_CLOUD_NAME: test
+      CLOUDINARY_API_KEY: test
+      CLOUDINARY_API_SECRET: test
+
+      JWT_SECRET_KEY: test-only-placeholder
+
+    steps:
+      # 1. Отримуємо код із GitHub
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # 2. Встановлюємо Python
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      # 3. Встановлюємо залежності
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      # 4. Перевіряємо синтаксис Python
+      - name: Check Python syntax
+        run: python -m compileall -q app
+
+      # 5. Перевіряємо стиль та якість коду
+      - name: Lint with Ruff
+        run: python -m ruff check app tests
+
+      # 6. Запускаємо тести
+      - name: Run tests
+        run: python -m pytest tests -q
