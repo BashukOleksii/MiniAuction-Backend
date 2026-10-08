@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
+
 from pymongo import ReturnDocument
 
 
@@ -14,9 +15,9 @@ class AuctionFinalizationRepository:
     async def finalize_auction_atomically(
         self,
         auction_id: str,
-        winner_id: Optional[str],
+        winner_id: str | None,
         now: datetime,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Умовне атомарне оновлення лота:
         - status == 'active'

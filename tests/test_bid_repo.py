@@ -1,7 +1,7 @@
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -24,7 +24,7 @@ class Bid(BaseModel):
     amount: int  # Суворо ціле число (int) за ТЗ
     sequence: int
     request_id: str
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
 
     model_config = {
         "populate_by_name": True,
@@ -52,18 +52,16 @@ class BidRepository:
 
         doc["created_at"] = datetime.now(timezone.utc)
 
-        try:
-            await self.bids_collection.insert_one(doc, session=session)
-        except DuplicateKeyError:
-            raise
+        await self.bids_collection.insert_one(doc, session=session)
+        return Bid.model_validate(doc)
 
         return Bid.model_validate(doc)
 
     async def get_bid_by_id(
         self,
         bid_id: str,
-        session: Optional[AsyncClientSession] = None,
-    ) -> Optional[Bid]:
+        session: AsyncClientSession | None = None,
+    ) -> Bid | None:
         """A2: Знаходить ставку за рядковим UUID (_id)."""
         doc = await self.bids_collection.find_one({"_id": bid_id}, session=session)
         if not doc:
@@ -75,8 +73,8 @@ class BidRepository:
         auction_id: str,
         bidder_id: str,
         request_id: str,
-        session: Optional[AsyncClientSession] = None,
-    ) -> Optional[Bid]:
+        session: AsyncClientSession | None = None,
+    ) -> Bid | None:
         """A3: Пошук за 3 полями для ідемпотентності."""
         doc = await self.bids_collection.find_one(
             {
@@ -118,7 +116,7 @@ class BidRepository:
     async def count_auction_bids(
         self,
         auction_id: str,
-        session: Optional[AsyncClientSession] = None,
+        session: AsyncClientSession | None = None,
     ) -> int:
         """A5: Підрахунок ставок за auction_id."""
         return await self.bids_collection.count_documents(
@@ -154,8 +152,8 @@ class BidRepository:
     async def get_latest_bid(
         self,
         auction_id: str,
-        session: Optional[AsyncClientSession] = None,
-    ) -> Optional[Bid]:
+        session: AsyncClientSession | None = None,
+    ) -> Bid | None:
         """A7: Остання ставка лота за найбільшим sequence."""
         cursor = (
             self.bids_collection.find({"auction_id": auction_id}, session=session)
@@ -170,7 +168,7 @@ class BidRepository:
         self,
         auction_id: str,
         limit: int = 10,
-        after_sequence: Optional[int] = None,
+        after_sequence: int | None = None,
     ) -> list[Bid]:
         """F1: Останні ставки для polling, фільтрація sequence > after_sequence."""
         query: dict[str, Any] = {"auction_id": auction_id}
@@ -196,7 +194,7 @@ class BidRepository:
         new_amount: int,
         now: datetime,
         session: AsyncClientSession,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """A8: Атомарне оновлення лота під сесією."""
         filter_query = {
             "_id": auction_id,
@@ -269,11 +267,11 @@ async def repo(mongo_client):
 @pytest.fixture
 def make_bid():
     def _create(
-        auction_id: Optional[str] = None,
-        bidder_id: Optional[str] = None,
+        auction_id: str | None = None,
+        bidder_id: str | None = None,
         amount: int = 100,
         seq: int = 1,
-        req_id: Optional[str] = None,
+        req_id: str | None = None,
     ) -> Bid:
         return Bid(
             auction_id=auction_id or str(uuid.uuid4()),

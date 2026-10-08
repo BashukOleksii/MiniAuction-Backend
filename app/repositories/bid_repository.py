@@ -1,10 +1,9 @@
-from datetime import datetime, timezone
-from typing import Any, Optional
 import uuid
+from datetime import datetime, timezone
+from typing import Any
 
 from pymongo import ReturnDocument
 from pymongo.asynchronous.client_session import AsyncClientSession
-from pymongo.errors import DuplicateKeyError
 
 from app.models.bid import Bid
 
@@ -26,25 +25,15 @@ class BidRepository:
         bid: Bid,
         session: AsyncClientSession,
     ) -> Bid:
-        """
-        Вставляє Bid у межах переданої MongoDB-транзакції.
-        Генерує серверний UTC created_at, гарантує строгий UUID _id.
-        Помилки унікальності (DuplicateKeyError) прокидає вище в сервіс.
-        """
         doc = bid.model_dump(by_alias=True)
         if not doc.get("_id"):
             doc["_id"] = str(uuid.uuid4())
+        if not doc.get("created_at"):
+            doc["created_at"] = datetime.now(timezone.utc)
 
-        # Серверний час у форматі UTC
-        doc["created_at"] = datetime.now(timezone.utc)
-
-        try:
-            await self.bids_collection.insert_one(doc, session=session)
-        except DuplicateKeyError:
-            # Не перетворюємо на 500, дозволяємо сервісу обробити 409
-            raise
-
+        await self.bids_collection.insert_one(doc, session=session)
         return Bid.model_validate(doc)
+
 
     # =========================================================================
     # A2. get_bid_by_id(bid_id)
@@ -52,8 +41,8 @@ class BidRepository:
     async def get_bid_by_id(
         self,
         bid_id: str,
-        session: Optional[AsyncClientSession] = None,
-    ) -> Optional[Bid]:
+        session: AsyncClientSession | None = None,
+    ) -> Bid | None:
         """
         Знаходить конкретну ставку за її UUID (_id).
         """
@@ -70,8 +59,8 @@ class BidRepository:
         auction_id: str,
         bidder_id: str,
         request_id: str,
-        session: Optional[AsyncClientSession] = None,
-    ) -> Optional[Bid]:
+        session: AsyncClientSession | None = None,
+    ) -> Bid | None:
         """
         Шукає результат попереднього запиту за 3 полями для забезпечення ідемпотентності.
         """
@@ -124,7 +113,7 @@ class BidRepository:
     async def count_auction_bids(
         self,
         auction_id: str,
-        session: Optional[AsyncClientSession] = None,
+        session: AsyncClientSession | None = None,
     ) -> int:
         """
         Рахує кількість ставок за auction_id для звірки з bid_count або пагінації.
@@ -171,8 +160,8 @@ class BidRepository:
     async def get_latest_bid(
         self,
         auction_id: str,
-        session: Optional[AsyncClientSession] = None,
-    ) -> Optional[Bid]:
+        session: AsyncClientSession | None = None,
+    ) -> Bid | None:
         """
         Діагностично отримує останню ставку лота з найбільшим sequence.
         """
@@ -192,7 +181,7 @@ class BidRepository:
         self,
         auction_id: str,
         limit: int = 10,
-        after_sequence: Optional[int] = None,
+        after_sequence: int | None = None,
     ) -> list[Bid]:
         """
         Повертає короткий список свіжих ставок для polling.
@@ -224,7 +213,7 @@ class BidRepository:
         new_amount: int,
         now: datetime,
         session: AsyncClientSession,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Умовно й атомарно оновлює Auction усередині активної транзакції:
         - Перевіряє оптимістичне блокування по current_price == expected_price

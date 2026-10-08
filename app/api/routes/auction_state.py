@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query, status
 
 from app.api.dependencies import (
@@ -24,13 +25,11 @@ router = APIRouter(prefix="/auctions", tags=["auction-state"])
 )
 async def get_auction_state(
     auction_id: str,
-    optional_user: Optional[User] = Depends(get_optional_current_user),
-    state_service: AuctionStateService = Depends(get_auction_state_service),
+    optional_user: Annotated[User | None, Depends(get_optional_current_user)] = None,
+    state_service: Annotated[AuctionStateService, Depends(get_auction_state_service)] = None,
 ) -> AuctionStateResponse:
     """
-    Легкий статус лота для polling раз на ~3 секунди:
-    - ends_at, remaining_seconds, current_price, minimum_bid
-    - is_winning для поточного авторизованого користувача
+    Легкий статус лота для polling раз на ~3 секунди.
     """
     return await state_service.get_auction_state(
         auction_id=auction_id,
@@ -46,12 +45,12 @@ async def get_auction_state(
 )
 async def get_recent_bids(
     auction_id: str,
-    limit: int = Query(default=10, ge=1, le=20),
-    after_sequence: Optional[int] = Query(default=None, ge=1),
-    state_service: AuctionStateService = Depends(get_auction_state_service),
+    state_service: Annotated[AuctionStateService, Depends(get_auction_state_service)],
+    limit: Annotated[int, Query(ge=1, le=20)] = 10,
+    after_sequence: Annotated[int | None, Query(ge=1)] = None,
 ) -> list[BidResponse]:
     """
-    Повертає останні ставки за sequence DESC (з можливістю брати лише ті, що після after_sequence).
+    Повертає останні ставки за sequence DESC.
     """
     bids = await state_service.get_recent_bids(
         auction_id=auction_id,
@@ -79,11 +78,11 @@ async def get_recent_bids(
 )
 async def get_auction_result(
     auction_id: str,
-    finalization_service: AuctionFinalizationService = Depends(get_auction_finalization_service),
+    finalization_service: Annotated[
+        AuctionFinalizationService, Depends(get_auction_finalization_service)
+    ],
 ) -> AuctionResultResponse:
     """
-    Публічний результат після закінчення часу лота:
-    - winner_id, winning_bid, total_bids, ended_at
-    - Якщо лот ще триває — повертає 409
+    Публічний результат після закінчення часу лота.
     """
     return await finalization_service.get_auction_result(auction_id=auction_id)

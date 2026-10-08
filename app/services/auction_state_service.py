@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from typing import Optional
 
 from fastapi import HTTPException, status
 
@@ -62,7 +61,7 @@ class AuctionStateService:
     # D5. is_user_winning
     # =========================================================================
     @classmethod
-    def is_user_winning(cls, auction: Auction, user: Optional[User], effective_status: str) -> bool:
+    def is_user_winning(cls, auction: Auction, user: User | None, effective_status: str) -> bool:
         """Повертає True тільки якщо user є, він лідер і лот активний."""
         if not user or not auction.leader_id:
             return False
@@ -72,7 +71,7 @@ class AuctionStateService:
     # D6. get_minimum_next_bid
     # =========================================================================
     @staticmethod
-    def get_minimum_next_bid(auction: Auction, effective_status: str) -> Optional[int]:
+    def get_minimum_next_bid(auction: Auction, effective_status: str) -> int | None:
         """Повертає наступну ставку або None для завершеного/неактивного лота."""
         if effective_status in ("finished", "cancelled", "draft"):
             return None
@@ -84,7 +83,7 @@ class AuctionStateService:
     async def get_auction_state(
         self,
         auction_id: str,
-        optional_user: Optional[User] = None,
+        optional_user: User | None = None,
     ) -> AuctionStateResponse:
         """
         Легкий запит за одне читання лота для швидкого polling (D2).
@@ -99,12 +98,13 @@ class AuctionStateService:
         now = datetime.now(timezone.utc)
 
         # Захист чужих draft
-        if auction.status == "draft":
-            if not optional_user or optional_user.id != auction.seller_id:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail={"code": "AUCTION_NOT_FOUND", "message": "Auction not found"},
-                )
+        if auction.status == "draft" and (
+                not optional_user or optional_user.id != auction.seller_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "AUCTION_NOT_FOUND", "message": "Auction not found"},
+            )
 
         # Дофіналізація при завершенні часу (E6)
         auction = await self.finalization_service.ensure_auction_finalized(auction, now)
@@ -134,7 +134,7 @@ class AuctionStateService:
         self,
         auction_id: str,
         limit: int = 10,
-        after_sequence: Optional[int] = None,
+        after_sequence: int | None = None,
     ) -> list[Bid]:
         """
         Отримання свіжих ставок без повного сканування бази (F1).

@@ -11,7 +11,9 @@ from app.db.mongodb import get_database
 from app.models.user import User
 
 # Репозиторії
-from app.repositories.auction_finalization_repository import AuctionFinalizationRepository
+from app.repositories.auction_finalization_repository import (
+    AuctionFinalizationRepository,
+)
 from app.repositories.auction_repository import AuctionRepository
 from app.repositories.bid_repository import BidRepository
 from app.repositories.user_repository import UserRepository

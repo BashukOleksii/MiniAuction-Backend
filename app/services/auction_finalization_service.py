@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
-from typing import Optional
 
 from fastapi import HTTPException, status
 
 from app.models.auction import Auction
-from app.repositories.auction_finalization_repository import AuctionFinalizationRepository
+from app.repositories.auction_finalization_repository import (
+    AuctionFinalizationRepository,
+)
 from app.repositories.auction_repository import AuctionRepository
 from app.schemas.auction_result import AuctionResultResponse
 
@@ -30,7 +31,7 @@ class AuctionFinalizationService:
     # E3. determine_winner
     # =========================================================================
     @staticmethod
-    def determine_winner(auction: Auction) -> tuple[Optional[str], Optional[int]]:
+    def determine_winner(auction: Auction) -> tuple[str | None, int | None]:
         """
         Визначає (winner_id, winning_bid).
         Якщо bid_count == 0 -> (None, None).

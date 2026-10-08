@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -9,8 +9,8 @@ class AuctionResultResponse(BaseModel):
     """
     auction_id: str
     status: str = Field(default="finished")
-    winner_id: Optional[str] = None
-    winning_bid: Optional[int] = None
+    winner_id: str | None = None
+    winning_bid: int | None = None
     total_bids: int
     ended_at: datetime
 
