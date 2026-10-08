@@ -3,7 +3,9 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 
 from app.models.auction import Auction
-from app.repositories.auction_finalization_repository import AuctionFinalizationRepository
+from app.repositories.auction_finalization_repository import (
+    AuctionFinalizationRepository,
+)
 from app.repositories.auction_repository import AuctionRepository
 from app.schemas.auction_result import AuctionResultResponse
 
