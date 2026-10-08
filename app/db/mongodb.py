@@ -30,8 +30,25 @@ async def create_indexes(db: AsyncDatabase) -> None:
         [("bidder_id", ASCENDING), ("created_at", DESCENDING)],
         name="ix_bids_bidder_created",
     )
+    # Забезпечує унікальну послідовність ставок всередині аукціону.
+    await db["bids"].create_index(
+        [("auction_id", ASCENDING), ("sequence", ASCENDING)],
+        unique=True,
+        name="ux_bids_auction_sequence",
+        partialFilterExpression={"sequence": {"$exists": True}},
+    )
+    # Один і той самий request_id може бути прийнятий лише раз для учасника/лота.
+    await db["bids"].create_index(
+        [
+            ("auction_id", ASCENDING),
+            ("bidder_id", ASCENDING),
+            ("request_id", ASCENDING),
+        ],
+        unique=True,
+        name="ux_bids_idempotency",
+        partialFilterExpression={"request_id": {"$exists": True}},
+    )
 
-    # New: pagination and action filtering for the administrator audit feed.
     await db["admin_audit_logs"].create_index(
         [("created_at", DESCENDING), ("_id", ASCENDING)],
         name="ix_admin_audit_created",
@@ -53,6 +70,8 @@ async def initialize_mongodb(app: FastAPI) -> AsyncMongoClient:
         db = client[settings.mongodb_db_name]
         await create_indexes(db)
         app.state.db = db
+        # get_mongo_client з app.api.dependencies повинен бачити той самий клієнт.
+        app.state.mongo_client = client
         return client
     except Exception:
         await client.close()

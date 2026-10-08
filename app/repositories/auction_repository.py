@@ -1,5 +1,3 @@
-"""Async MongoDB operations. Auction bidding state is owned by developer 2."""
-
 from datetime import datetime
 from typing import Any
 
@@ -55,13 +53,15 @@ class AuctionRepository:
         expected_price: int,
         now: datetime,
     ) -> Auction | None:
-        # CAS on status/price/leader prevents cancellation racing a new bid.
+        # Блокуємо скасування одночасно з прийняттям ставки.
+        # Старі документи можуть не мати bid_count.
         query: dict[str, Any] = {
             "_id": auction_id,
             "seller_id": seller_id,
             "status": expected_status,
             "current_price": expected_price,
             "leader_id": None,
+            "bid_count": {"$in": [0, None]},
         }
         if expected_status == AuctionStatus.ACTIVE.value:
             query["ends_at"] = {"$gt": now}

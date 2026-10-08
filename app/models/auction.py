@@ -30,19 +30,23 @@ class Auction(MongoModel):
     starting_price: int = Field(ge=0)
     current_price: int = Field(ge=0)
     min_bid_step: int = Field(default=1, gt=0)
+    bid_count: int = Field(default=0, ge=0)
 
     starts_at: datetime = Field(default_factory=utc_now)
     ends_at: datetime
     status: AuctionStatus = AuctionStatus.DRAFT
     leader_id: str | None = None
     winner_id: str | None = None
+    finalized_at: datetime | None = None
 
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
-    @field_validator("starts_at", "ends_at")
+    @field_validator("starts_at", "ends_at", "finalized_at")
     @classmethod
-    def ensure_utc(cls, value: datetime) -> datetime:
+    def ensure_utc(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("The datetime must include timezone information")
         return value.astimezone(timezone.utc)

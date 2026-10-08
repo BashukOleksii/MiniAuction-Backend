@@ -69,7 +69,6 @@ async def upload_auction_image(
     storage: Annotated[CloudinaryImageStorage, Depends(get_image_storage)],
 ) -> AuctionResponse:
     try:
-        # One extra byte lets us reject oversized files without loading all of them.
         contents = await file.read(MAX_IMAGE_BYTES + 1)
     finally:
         await file.close()
