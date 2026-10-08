@@ -1,3 +1,4 @@
+
 from datetime import datetime
 from typing import Literal
 
@@ -10,8 +11,12 @@ class User(MongoModel):
     username: str = Field(min_length=3, max_length=50)
     email: EmailStr
     password_hash: str = Field(min_length=1)
+
     role: Literal["user", "admin"] = "user"
     is_active: bool = True
+
+    token_version: int = Field(default=0, ge=0)
+
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
