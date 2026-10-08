@@ -233,7 +233,7 @@ def test_list_users_filter_and_password_hash_not_exposed(admin_api):
 
 
 def test_admin_get_user_404_and_detail(admin_api):
-    client, repo, current, admin, seller, *_ = admin_api
+    client, _repo, _current, _admin, seller, *_ = admin_api
     assert client.get(f"/api/v1/admin/users/{seller.id}").json()["id"] == seller.id
     assert client.get("/api/v1/admin/users/missing").status_code == 404
 
@@ -256,7 +256,7 @@ def test_block_and_unblock_revokes_tokens_and_audits(admin_api):
 
 
 def test_cannot_block_self_or_other_admin(admin_api):
-    client, _, _, admin, seller, bidder, another_admin, *_ = admin_api
+    client, _, _, admin, _seller, _bidder, another_admin, *_ = admin_api
     assert client.post(f"/api/v1/admin/users/{admin.id}/block", json=reason()).status_code == 409
     assert client.post(f"/api/v1/admin/users/{another_admin.id}/block", json=reason()).status_code == 409
     assert client.post("/api/v1/admin/users/missing/block", json=reason()).status_code == 404
@@ -301,7 +301,7 @@ def test_admin_cancel_draft_and_active(admin_api):
 
 
 def test_admin_cannot_cancel_auction_with_bid_history(admin_api):
-    client, repo, _, _, _, _, _, draft, active, _ = admin_api
+    client, repo, _, _, _, _, _, _draft, active, _ = admin_api
     repo.bids.append({"auction_id": active.id})
     result = client.post(f"/api/v1/admin/auctions/{active.id}/cancel", json=reason())
     assert result.status_code == 409
@@ -310,7 +310,7 @@ def test_admin_cannot_cancel_auction_with_bid_history(admin_api):
 
 
 def test_admin_cannot_cancel_current_leader_or_price_changed(admin_api):
-    client, repo, _, _, _, _, _, draft, active, _ = admin_api
+    client, _repo, _, _, _, _, _, _draft, active, _ = admin_api
     active.leader_id = "bidder-id"
     assert client.post(f"/api/v1/admin/auctions/{active.id}/cancel", json=reason()).status_code == 409
     active.leader_id = None
@@ -319,13 +319,13 @@ def test_admin_cannot_cancel_current_leader_or_price_changed(admin_api):
 
 
 def test_admin_cancel_cas_conflict(admin_api):
-    client, repo, _, _, _, _, _, draft, active, _ = admin_api
+    client, repo, _, _, _, _, _, _draft, active, _ = admin_api
     repo.fail_cas = True
     assert client.post(f"/api/v1/admin/auctions/{active.id}/cancel", json=reason()).status_code == 409
 
 
 def test_statistics_and_audit_pagination(admin_api):
-    client, repo, _, _, seller, _, _, draft, active, scheduled = admin_api
+    client, repo, _, _, seller, _, _, _draft, active, _scheduled = admin_api
     repo.bids.extend([{"auction_id": active.id}, {"auction_id": active.id}])
     stats = client.get("/api/v1/admin/statistics")
     assert stats.status_code == 200
